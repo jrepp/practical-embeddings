@@ -1,0 +1,8 @@
+# LaTeX build outputs
+tex/*.aux
+tex/*.log
+tex/*.out
+tex/*.toc
+tex/*.pdf
+tex/chapters/*.aux
+.DS_Store
