@@ -1,27 +1,32 @@
 %% isof-code.sty
-%% Shared code styling for ISOF documentation
-%% Part of the ISOF componentized documentation framework
+%% Code: tinted full-width panels, no frame, small monospace.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{isof-code}[2025/02/10 ISOF Code Styling]
+\ProvidesPackage{isof-code}[2026/10/16 ISOF Code Styling]
 
-% Requires color definitions and fancyvrb
 \RequirePackage{isof-colors}
 \RequirePackage{fancyvrb}
+\RequirePackage[most]{tcolorbox}
 
-% Code block environment using fancyvrb
-\DefineVerbatimEnvironment{code}{Verbatim}{
-    frame=single,
-    framesep=10pt,
-    rulecolor=\color{lightgray},
-    formatcom=\color{darkgray},
-    fontsize=\small,
-    baselinestretch=1.0,
-    xleftmargin=0pt,
-    xrightmargin=0pt
+\fvset{fontsize=\small, formatcom=\color{ink}, baselinestretch=1.05}
+
+\newtcolorbox{isofcodepanel}{%
+    enhanced, breakable,
+    colback=codebg, colframe=codebg, boxrule=0pt, arc=0pt,
+    left=10pt, right=10pt, top=7pt, bottom=1pt,
+    before skip=10pt, after skip=12pt,
+    before upper={\setlength{\parskip}{0pt}\setlength{\topsep}{0pt}\setlength{\partopsep}{0pt}},
+    after upper={\par\unskip}
 }
 
-% Inline code command
-\newcommand{\inlinecode}[1]{\texttt{\textcolor{darkgray}{#1}}}
+% Every Verbatim block sits in a panel
+\BeforeBeginEnvironment{Verbatim}{\begin{isofcodepanel}}
+\AfterEndEnvironment{Verbatim}{\end{isofcodepanel}}
+
+% Named code block environment
+\DefineVerbatimEnvironment{code}{Verbatim}{}
+
+% Inline code
+\newcommand{\inlinecode}[1]{\texttt{#1}}
 
 \endinput

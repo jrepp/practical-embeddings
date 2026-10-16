@@ -1,31 +1,31 @@
 %% isof-boxes.sty
-%% Shared box environments for ISOF documentation
-%% Part of the ISOF componentized documentation framework
+%% Callouts: a tinted panel with a thick left bar and a small sans label.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{isof-boxes}[2025/02/10 ISOF Box Environments]
+\ProvidesPackage{isof-boxes}[2026/10/16 ISOF Box Environments]
 
-% Requires color definitions
 \RequirePackage{isof-colors}
+\RequirePackage[most]{tcolorbox}
 
-% Note box - for important notes
+% #1 bar color, #2 background, #3 label
+\newtcolorbox{isofcallout}[3]{%
+    enhanced, breakable,
+    colback=#2, colframe=#2, boxrule=0pt, arc=0pt,
+    borderline west={4pt}{0pt}{#1},
+    left=12pt, right=10pt, top=8pt, bottom=8pt,
+    before skip=14pt, after skip=14pt,
+    fontupper=\normalsize,
+    before upper={\RaggedRight%
+        {\sffamily\bfseries\small\MakeUppercase{#3}\par}\smallskip}%
+}
+
 \newenvironment{notebox}[1][Note]
-{\par\vspace{10pt}\parindent0pt\textbf{#1: }}
-{\par\vspace{10pt}}
-
-% Tip box - for helpful tips  
+    {\begin{isofcallout}{accent}{notebg}{#1}}{\end{isofcallout}}
 \newenvironment{tipbox}[1][Tip]
-{\par\vspace{10pt}\parindent0pt\textbf{#1: }}
-{\par\vspace{10pt}}
-
-% Warning box - for warnings and cautions
+    {\begin{isofcallout}{ink}{tipbg}{#1}}{\end{isofcallout}}
 \newenvironment{warningbox}[1][Warning]
-{\par\vspace{10pt}\parindent0pt\textbf{#1: }}
-{\par\vspace{10pt}}
-
-% Example box - for code examples and demonstrations
+    {\begin{isofcallout}{accentdark}{notebg}{#1}}{\end{isofcallout}}
 \newenvironment{examplebox}[1][Example]
-{\par\vspace{10pt}\parindent0pt\textbf{#1: }}
-{\par\vspace{10pt}}
+    {\begin{isofcallout}{medgray}{lightgray}{#1}}{\end{isofcallout}}
 
 \endinput

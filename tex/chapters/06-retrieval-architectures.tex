@@ -186,7 +186,7 @@ A strong modern local retrieval stack:
 
 \begin{description}
     \item[First local deployment] Use dense retrieval with Qwen3-Embedding-4B. Serve with
-          \texttt{llama-server~--embedding~--pooling~last}. Add reranking if top-of-list
+          \texttt{llama-server --embedding --pooling last}. Add reranking if top-of-list
           precision becomes a bottleneck.
     \item[Hybrid search needed] Add BM25 alongside vector search; fuse results with RRF (see
           Chapter~\ref{ch:ranking}). memvid includes this by default in its \texttt{ask()} method.
