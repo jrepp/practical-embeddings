@@ -6,3 +6,8 @@ tex/*.toc
 tex/*.pdf
 tex/chapters/*.aux
 .DS_Store
+
+# Built PDFs are published as GitHub Release assets, not committed
+pdf-releases/
+tex/version.tex
+tex/build.log
