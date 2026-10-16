@@ -1,0 +1,127 @@
+# Build the book on every push and pull request. On main, publish a GitHub
+# Release whenever VERSION-book names a version that has no v<version> tag yet.
+#
+# Two ways to release:
+#   - change VERSION-book in a pull request; merging it publishes the release
+#   - run this workflow by hand (or `just release minor`) to bump and publish
+name: Book
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version part to bump before releasing
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+
+permissions:
+  contents: read
+
+concurrency:
+  group: book-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.version.outputs.sha }}
+      release: ${{ steps.version.outputs.release }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Bump VERSION-book
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main ]]; then
+            echo "::error::Releases are cut from main only"
+            exit 1
+          fi
+          IFS=. read -r major minor patch <<< "$(tr -d '[:space:]' < VERSION-book)"
+          case "$BUMP" in
+            major) next="$((major + 1)).0.0" ;;
+            minor) next="${major}.$((minor + 1)).0" ;;
+            patch) next="${major}.${minor}.$((patch + 1))" ;;
+          esac
+          echo "$next" > VERSION-book
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release v${next}"
+          git push origin HEAD:main
+
+      - name: Resolve version
+        id: version
+        run: |
+          version=$(tr -d '[:space:]' < VERSION-book)
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error file=VERSION-book::Not a semantic version: '${version}'"
+            exit 1
+          fi
+          release=false
+          if [[ "$GITHUB_EVENT_NAME" != pull_request && "$GITHUB_REF" == refs/heads/main ]] \
+              && ! git rev-parse -q --verify "refs/tags/v${version}" >/dev/null; then
+            release=true
+          fi
+          {
+            echo "version=${version}"
+            echo "sha=$(git rev-parse HEAD)"
+            echo "release=${release}"
+          } >> "$GITHUB_OUTPUT"
+          echo "v${version} (release: ${release})"
+
+  build:
+    needs: version
+    runs-on: ubuntu-latest
+    container: texlive/texlive:latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+
+      - name: Build PDF
+        run: ./scripts/build_book.sh "${{ needs.version.outputs.version }}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Practical-Embeddings-v${{ needs.version.outputs.version }}
+          path: pdf-releases/Practical-Embeddings-v${{ needs.version.outputs.version }}.pdf
+          if-no-files-found: error
+
+  release:
+    needs: [version, build]
+    if: needs.version.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: Practical-Embeddings-v${{ needs.version.outputs.version }}
+          path: dist
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+          SHA: ${{ needs.version.outputs.sha }}
+        run: |
+          # A stable name too, so releases/latest/download/Practical-Embeddings.pdf works
+          cp "dist/Practical-Embeddings-v${VERSION}.pdf" dist/Practical-Embeddings.pdf
+          gh release create "v${VERSION}" \
+            "dist/Practical-Embeddings-v${VERSION}.pdf" \
+            dist/Practical-Embeddings.pdf \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SHA" \
+            --title "Practical Embeddings v${VERSION}" \
+            --generate-notes

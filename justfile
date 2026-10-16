@@ -36,4 +36,6 @@ book-check:
 book-list:
     @ls -lh pdf-releases/*.pdf 2>/dev/null || echo "No PDFs yet — run: just book"
 
-# ─── pi ───────────────────────────────────────────────────────────────────────
+# Release from CI: bump VERSION-book on main, build, and publish a GitHub Release
+release BUMP="patch":
+    gh workflow run book.yml --ref main -f bump={{ BUMP }}

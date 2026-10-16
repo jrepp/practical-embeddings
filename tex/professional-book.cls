@@ -1,29 +1,36 @@
 %% professional-book.cls
-%% LaTeX class file for professional technical books
-%% Uses only BasicTeX packages - no extra dependencies
+%% Zine-style technical book class: O'Reilly trim and hierarchy, pared down.
+%%   - Source Serif 4 body, Source Sans 3 headings, Source Code Pro code
+%%   - ragged right, no paragraph indent, space between paragraphs
+%%   - one accent color; tinted code panels and left-bar callouts
+%% All fonts and packages ship with TeX Live.
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesClass{professional-book}[2025/11/20 Professional Technical Book Class]
+\ProvidesClass{professional-book}[2026/10/16 Zine-style technical book class]
 
-% Base on book class
-\LoadClass[10pt,openright]{book}
+\LoadClass[11pt,openany]{book}
 
-% Required packages (all available in BasicTeX)
 \RequirePackage{fontspec}
-\RequirePackage[paperwidth=7in,paperheight=9.25in,top=0.75in,bottom=0.75in,inner=0.75in,outer=0.6in]{geometry}
+\RequirePackage[paperwidth=7in,paperheight=9.25in,
+    top=0.85in,bottom=0.9in,inner=0.9in,outer=0.8in,
+    headheight=14pt,headsep=0.3in,footskip=0.45in]{geometry}
 \RequirePackage{xcolor}
 \RequirePackage{graphicx}
 \RequirePackage{fancyhdr}
 \RequirePackage{fancyvrb}
 \RequirePackage{caption}
-\RequirePackage{hyperref}
 \RequirePackage{booktabs}
 \RequirePackage{longtable}
 \RequirePackage{amsmath}
 \RequirePackage{amssymb}
 \RequirePackage{tikz}
+\RequirePackage{eso-pic}
+\RequirePackage{enumitem}
+\RequirePackage{titlesec}
+\RequirePackage{ragged2e}
+\RequirePackage{microtype}
+\RequirePackage{hyperref}
 
-% Import common ISOF packages (componentized documentation framework)
 \makeatletter
 \def\input@path{{./}}
 \makeatother
@@ -31,138 +38,190 @@
 \RequirePackage{isof-code}
 \RequirePackage{isof-boxes}
 
-% Hyperlink setup
+% ============================================
+% Fonts
+% ============================================
+\setmainfont{SourceSerif4}[
+    Extension=.otf, UprightFont=*-Regular, ItalicFont=*-RegularIt,
+    BoldFont=*-Semibold, BoldItalicFont=*-SemiboldIt, Ligatures=TeX]
+\setsansfont{SourceSans3}[
+    Extension=.otf, UprightFont=*-Regular, ItalicFont=*-RegularIt,
+    BoldFont=*-Bold, BoldItalicFont=*-BoldIt, Ligatures=TeX]
+\setmonofont{SourceCodePro}[
+    Extension=.otf, UprightFont=*-Regular, ItalicFont=*-RegularIt,
+    BoldFont=*-Semibold, BoldItalicFont=*-SemiboldIt, Scale=0.88]
+\newfontfamily\displayfont{SourceSans3}[
+    Extension=.otf, UprightFont=*-Black, BoldFont=*-Black]
+
+% ============================================
+% Body text
+% ============================================
+\linespread{1.18}
+\color{ink}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65\baselineskip plus 2pt minus 1pt}
+% Ragged right with light hyphenation: even word spacing reads easier
+\setlength{\RaggedRightParindent}{0pt}
+\setlength{\RaggedRightRightskip}{0pt plus 4em}
+\AtBeginDocument{\RaggedRight}
+\setlength{\emergencystretch}{2em}
+\hyphenpenalty=5000
+\exhyphenpenalty=50
+\clubpenalty=10000
+\widowpenalty=10000
+
+% Lists: tighter than the parskip, accent bullets
+\setlist{itemsep=3pt, parsep=0pt, topsep=4pt, partopsep=0pt}
+\setlist[itemize,1]{label={\color{accent}\textbullet}, leftmargin=1.4em}
+\setlist[itemize,2]{label={\color{medgray}--}}
+\setlist[enumerate,1]{label={\sffamily\bfseries\color{accent}\arabic*.}, leftmargin=1.6em}
+\setlist[description]{font={\sffamily\bfseries}, leftmargin=1.2em, style=nextline, itemsep=5pt}
+
+% Links
 \hypersetup{
     colorlinks=true,
-    linkcolor=primarycolor,
-    urlcolor=primarycolor,
+    linkcolor=ink,
+    urlcolor=accentdark,
     citecolor=medgray,
     bookmarksnumbered=true,
     bookmarksopen=true,
     pdfstartview=FitH
 }
+\urlstyle{same}
 
-% Page style with running headers
+% ============================================
+% Headings
+% ============================================
+\titleformat{\chapter}[display]
+    {\normalfont\sffamily\RaggedRight}
+    {\displayfont\fontsize{64}{64}\selectfont\color{accent}\thechapter}
+    {6pt}
+    {\color{ink}\bfseries\fontsize{30}{34}\selectfont}
+    [\vspace{8pt}{\color{ink}\titlerule[2.5pt]}]
+\titleformat{name=\chapter,numberless}[display]
+    {\normalfont\sffamily\RaggedRight}
+    {}
+    {0pt}
+    {\color{ink}\bfseries\fontsize{30}{34}\selectfont}
+    [\vspace{8pt}{\color{ink}\titlerule[2.5pt]}]
+\titlespacing*{\chapter}{0pt}{0pt}{28pt}
+
+\titleformat{\section}
+    {\normalfont\sffamily\bfseries\Large\color{ink}\RaggedRight}
+    {\color{accent}\thesection}{0.6em}{}
+\titlespacing*{\section}{0pt}{20pt plus 4pt minus 2pt}{6pt}
+
+\titleformat{\subsection}
+    {\normalfont\sffamily\bfseries\large\color{ink}\RaggedRight}
+    {\color{medgray}\thesubsection}{0.6em}{}
+\titlespacing*{\subsection}{0pt}{14pt plus 3pt minus 2pt}{4pt}
+
+\titleformat{\subsubsection}
+    {\normalfont\sffamily\bfseries\normalsize\color{ink}}
+    {}{0pt}{}
+\titlespacing*{\subsubsection}{0pt}{10pt plus 2pt}{2pt}
+
+% Part pages: full-bleed accent page, big white type
+\titleformat{\part}[display]
+    {\normalfont\sffamily\color{white}\RaggedRight}
+    {\large\bfseries\MakeUppercase{\partname}\ \thepart}
+    {10pt}
+    {\displayfont\fontsize{40}{44}\selectfont}
+\makeatletter
+\renewcommand{\part}{%
+    \clearpage
+    \AddToShipoutPictureBG*{\AtPageLowerLeft{%
+        \textcolor{accent}{\rule{\paperwidth}{\paperheight}}}}%
+    \thispagestyle{empty}%
+    \null\vfil
+    \secdef\@part\@spart}
+\def\@endpart{\vfil\newpage}
+\makeatother
+
+% ============================================
+% Running heads: small sans, a hairline under them
+% ============================================
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[LE,RO]{\thepage}
-\fancyhead[LO]{\nouppercase{\rightmark}}
-\fancyhead[RE]{\nouppercase{\leftmark}}
-\renewcommand{\headrulewidth}{0pt}
+\fancyhead[LE]{\sffamily\small\bfseries\color{accent}\thepage\quad\color{medgray}\nouppercase{\leftmark}}
+\fancyhead[RO]{\sffamily\small\color{medgray}\nouppercase{\rightmark}\quad\bfseries\color{accent}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{{\color{rulegray}\hrule width\headwidth height\headrulewidth}}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{#1}}
 \fancypagestyle{plain}{%
     \fancyhf{}
-    \fancyfoot[C]{\thepage}
+    \fancyfoot[C]{\sffamily\small\color{medgray}\thepage}
     \renewcommand{\headrulewidth}{0pt}
 }
 
-% Chapter formatting
-\makeatletter
-\renewcommand{\@makechapterhead}[1]{%
-  \vspace*{20pt}%
-  {\parindent \z@ \raggedright \normalfont
-    \ifnum \c@secnumdepth >\m@ne
-      \if@mainmatter
-        \huge\bfseries\sffamily\color{medgray} \thechapter
-        \par\nobreak
-        \vskip 10\p@
-      \fi
-    \fi
-    \interlinepenalty\@M
-    \Huge \bfseries\sffamily #1\par\nobreak
-    \vskip 40\p@
-  }}
-\makeatother
-
-% Section formatting
-\makeatletter
-\renewcommand\section{\@startsection{section}{1}{\z@}%
-  {-3.5ex \@plus -1ex \@minus -.2ex}%
-  {2.3ex \@plus.2ex}%
-  {\normalfont\Large\bfseries\sffamily\color{darkgray}}}
-\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
-  {-3.25ex\@plus -1ex \@minus -.2ex}%
-  {1.5ex \@plus .2ex}%
-  {\normalfont\large\bfseries\sffamily\color{medgray}}}
-\renewcommand\subsubsection{\@startsection{subsubsection}{3}{\z@}%
-  {-3.25ex\@plus -1ex \@minus -.2ex}%
-  {1.5ex \@plus .2ex}%
-  {\normalfont\normalsize\bfseries\sffamily\color{medgray}}}
-\makeatother
-
-% Code styling and box environments imported from common packages
-% (isof-code.sty and isof-boxes.sty)
-
-% Figure captions
+% ============================================
+% Tables and captions
+% ============================================
+\renewcommand{\arraystretch}{1.3}
+\setlength{\heavyrulewidth}{1.2pt}
+\setlength{\lightrulewidth}{0.4pt}
+\AtBeginEnvironment{tabular}{\sffamily\small}
+% Shrink any table wider than the text block to fit it
+\RequirePackage{adjustbox}
+\BeforeBeginEnvironment{tabular}{\begin{adjustbox}{max width=\linewidth}}
+\AfterEndEnvironment{tabular}{\end{adjustbox}}
 \captionsetup{
     font={small,sf},
-    labelfont={bf,sf},
+    labelfont={bf,sf,color=accent},
     labelsep=period,
-    justification=justified,
+    justification=raggedright,
     singlelinecheck=false
 }
 
-% Table style
-\renewcommand{\arraystretch}{1.3}
-
-% Title page with overlaid text (no background image)
-\RequirePackage{eso-pic}
-\renewcommand{\maketitle}{
-    \AddToShipoutPictureBG*{%
-        \AtPageLowerLeft{%
-            \textcolor{isofblue}{\rule{\paperwidth}{\paperheight}}%
-        }%
-    }%
-    \AddToShipoutPictureFG*{%
-        \AtPageLowerLeft{%
-            \put(54,28){%
-                \begin{tikzpicture}
-                    \node[fill=black!70, rounded corners=6pt, inner sep=8pt] {%
-                        \parbox{5.3in}{%
-                            \centering\color{white}\LARGE\sffamily\bfseries Jacob Repp \quad jrepp@ibm.com\strut%
-                        }%
-                    };
-                \end{tikzpicture}%
-            }%
-        }%
-    }%
-    % DRAFT banner on title page (Indiana Jones style - dramatic angled stamp)
-    \AddToShipoutPictureFG*{%
-        \AtPageUpperLeft{%
-            \put(240,-400){%
-                \rotatebox{-15}{%
-                    \fboxsep=8pt%
-                    \fboxrule=4pt%
-                    \fcolorbox{draftred}{white}{%
-                        \parbox{2.8in}{%
-                            \centering\color{draftred}\fontsize{36}{40}\selectfont\sffamily\bfseries DRAFT\\[2pt]%
-                            \fontsize{14}{16}\selectfont v\bookversion%
-                        }%
-                    }%
-                }%
-            }%
-        }%
-    }%
-    \thispagestyle{empty}
-    \mbox{}
+% ============================================
+% Title page: full accent cover, black type block
+% ============================================
+\makeatletter
+\renewcommand{\maketitle}{%
+    \AddToShipoutPictureBG*{\AtPageLowerLeft{%
+        \textcolor{accent}{\rule{\paperwidth}{\paperheight}}}}%
+    \thispagestyle{empty}%
+    \begingroup
+    \RaggedRight
+    \vspace*{0.4in}
+    {\displayfont\fontsize{50}{50}\selectfont\color{ink}\@title\par}
+    \vspace{14pt}
+    {\sffamily\bfseries\fontsize{20}{24}\selectfont\color{white}\@subtitle\par}
+    \vfill
+    {\color{ink}\rule{\linewidth}{3pt}\par}
+    \vspace{8pt}
+    {\sffamily\bfseries\Large\color{ink}\@author\par}
+    \vspace{2pt}
+    {\sffamily\large\color{white}Version \bookversion\quad\textbullet\quad\@date\par}
+    \endgroup
     \clearpage
 }
+\makeatother
 
-% Table of contents styling
-\renewcommand{\contentsname}{\sffamily\bfseries Table of Contents}
+\makeatletter
+\newcommand{\@subtitle}{}
+\newcommand{\subtitle}[1]{\renewcommand{\@subtitle}{#1}}
+\makeatother
 
-% ============================================
-% DRAFT MODE - Watermarks and indicators
-% ============================================
-
-% Add DRAFT watermark to every page (background)
-\AddToShipoutPictureBG{%
-    \AtPageCenter{%
-        \rotatebox{45}{%
-            \scalebox{8}{%
-                \textcolor{draftcolor!30}{DRAFT}%
-            }%
-        }%
-    }%
-}
+% Table of contents: sans chapter lines, quiet section lines
+\makeatletter
+\RequirePackage{titletoc}
+\renewcommand{\contentsname}{Contents}
+\titlecontents{part}[0pt]
+    {\addvspace{14pt}\sffamily\bfseries\small\color{accent}}
+    {\MakeUppercase{\partname}~\thecontentslabel\quad}{}{}[\addvspace{2pt}]
+\titlecontents{chapter}[1.8em]
+    {\addvspace{6pt}\sffamily\bfseries}
+    {\contentslabel{1.8em}}{\hspace*{-1.8em}}
+    {\hfill\contentspage}[\addvspace{1pt}]
+\titlecontents{section}[4.2em]
+    {\small}
+    {\contentslabel{2.4em}}{}
+    {\titlerule*[0.8em]{\color{rulegray}.}\contentspage}
+\setcounter{tocdepth}{1}
+\let\isof@tableofcontents\tableofcontents
+\renewcommand{\tableofcontents}{\begingroup\setlength{\parskip}{0pt}\isof@tableofcontents\endgroup}
+\makeatother
 
 \endinput
